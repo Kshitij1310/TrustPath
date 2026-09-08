@@ -42,7 +42,7 @@ export function Topbar() {
       .toUpperCase() ?? '?';
 
   return (
-    <header className="flex h-16 shrink-0 items-center gap-3 border-b bg-card/50 px-4 backdrop-blur md:px-6">
+    <header className="flex h-16 shrink-0 items-center gap-4 border-b bg-card/70 px-4 shadow-sm backdrop-blur md:px-6">
       {/* Mobile: the sidebar nav lives in a sheet. */}
       <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
         <SheetTrigger asChild>
@@ -63,27 +63,41 @@ export function Topbar() {
         </SheetContent>
       </Sheet>
 
-      <Link to={paths.plan} className="flex items-center gap-2 font-semibold md:hidden">
-        TrustRoute
+      <Link to={paths.plan} className="flex shrink-0 items-center gap-2.5">
+        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-sm">
+          <Route className="size-4" />
+        </span>
+        <span className="hidden text-[15px] font-semibold tracking-tight sm:inline">TrustRoute</span>
       </Link>
 
       <div className="flex-1" />
 
-      {!isOnline && (
-        <Badge variant="destructive" className="gap-1.5">
-          <WifiOff className="size-3" />
-          Offline
-        </Badge>
-      )}
+      {/* Settings is reachable from the account menu below — no need to
+          duplicate it in the header nav. */}
+      <SidebarNav
+        orientation="horizontal"
+        className="hidden md:flex"
+        exclude={[paths.settings]}
+      />
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label="Account menu">
-            <span className="grid size-8 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-              {initials}
-            </span>
-          </Button>
-        </DropdownMenuTrigger>
+      <div className="flex items-center gap-3">
+        {!isOnline && (
+          <Badge variant="destructive" className="gap-1.5">
+            <WifiOff className="size-3" />
+            Offline
+          </Badge>
+        )}
+
+        <span className="hidden h-8 w-px bg-border md:block" />
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" aria-label="Account menu">
+              <span className="grid size-8 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary ring-1 ring-primary/20">
+                {initials}
+              </span>
+            </Button>
+          </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel className="font-normal">
             <p className="text-sm font-medium">{user?.displayName}</p>
@@ -119,7 +133,8 @@ export function Topbar() {
             Sign out
           </DropdownMenuItem>
         </DropdownMenuContent>
-      </DropdownMenu>
+        </DropdownMenu>
+      </div>
     </header>
   );
 }

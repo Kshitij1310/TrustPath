@@ -66,6 +66,25 @@ export function ClickHandler({ onClick }) {
   return null;
 }
 
+/**
+ * Leaflet measures its container once on mount and never again on its own —
+ * a CSS-only resize (the side panel collapsing, a sidebar toggling) leaves it
+ * drawing tiles at the old size until the window itself fires a resize event.
+ * Watch the container and tell Leaflet to re-measure whenever it changes.
+ */
+export function MapResizeHandler() {
+  const map = useMap();
+
+  useEffect(() => {
+    const container = map.getContainer();
+    const observer = new ResizeObserver(() => map.invalidateSize());
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [map]);
+
+  return null;
+}
+
 export function MapCanvas({
   children,
   center = DEFAULT_CENTER,

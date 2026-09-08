@@ -1,15 +1,22 @@
 import { NavLink } from 'react-router-dom';
-import { Route } from 'lucide-react';
 import { navigation } from '@/app/routes';
 import { useIsAdmin } from '@/stores/authStore';
 import { cn } from '@/lib/utils';
 
-export function SidebarNav({ onNavigate, className }) {
+export function SidebarNav({ onNavigate, className, orientation = 'vertical', exclude = [] }) {
   const isAdmin = useIsAdmin();
-  const items = navigation.filter((item) => !item.adminOnly || isAdmin);
+  const items = navigation.filter(
+    (item) => (!item.adminOnly || isAdmin) && !exclude.includes(item.to),
+  );
 
   return (
-    <nav className={cn('flex flex-col gap-1', className)}>
+    <nav
+      className={cn(
+        'flex gap-0.5',
+        orientation === 'vertical' ? 'flex-col' : 'flex-row items-center',
+        className,
+      )}
+    >
       {items.map(({ to, label, icon: Icon, end }) => (
         <NavLink
           key={to}
@@ -18,39 +25,27 @@ export function SidebarNav({ onNavigate, className }) {
           onClick={onNavigate}
           className={({ isActive }) =>
             cn(
-              'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+              'group flex items-center gap-2 rounded-lg text-sm font-medium transition-colors',
+              orientation === 'vertical' ? 'px-3 py-2' : 'px-3 py-1.5',
               isActive
-                ? 'bg-primary/10 text-primary'
+                ? 'bg-primary text-primary-foreground shadow-sm'
                 : 'text-muted-foreground hover:bg-accent hover:text-foreground',
             )
           }
         >
-          <Icon className="size-4 shrink-0" />
-          {label}
+          {({ isActive }) => (
+            <>
+              <Icon
+                className={cn(
+                  'size-4 shrink-0 transition-transform',
+                  !isActive && 'group-hover:scale-110',
+                )}
+              />
+              {label}
+            </>
+          )}
         </NavLink>
       ))}
     </nav>
-  );
-}
-
-/** Desktop sidebar. On mobile the same nav renders inside a Sheet. */
-export function Sidebar() {
-  return (
-    <aside className="hidden w-60 shrink-0 flex-col border-r bg-card/50 md:flex">
-      <div className="flex h-16 items-center gap-2 border-b px-5">
-        <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">
-          <Route className="size-4" />
-        </span>
-        <span className="font-semibold tracking-tight">TrustRoute</span>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-3">
-        <SidebarNav />
-      </div>
-
-      <p className="border-t p-4 text-[11px] leading-relaxed text-muted-foreground">
-        Risk scores are contextual estimates, not predictions of crime.
-      </p>
-    </aside>
   );
 }

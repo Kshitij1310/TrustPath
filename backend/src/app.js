@@ -25,7 +25,8 @@ export function createApp() {
     cors({
       origin: (origin, cb) =>
         // Same-origin/curl requests have no Origin header; browsers always do.
-        !origin || env.corsOrigins.includes(origin)
+        // In development, allow any origin — Vite hops ports when one is busy.
+        !origin || !env.isProduction || env.corsOrigins.includes(origin)
           ? cb(null, true)
           : cb(new Error(`Origin ${origin} is not allowed`)),
       credentials: true,

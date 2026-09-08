@@ -23,16 +23,16 @@ export function DemoDataBanner() {
   return (
     <div
       role="status"
-      className="flex shrink-0 items-center gap-2.5 border-b border-risk-moderate/40 bg-risk-moderate/10 px-4 py-2 text-xs md:px-6"
+      className="flex shrink-0 items-center gap-2 border-b border-risk-moderate/30 bg-risk-moderate/10 px-4 py-1.5 text-[11px] leading-tight md:px-6"
     >
       <FlaskConical className="size-3.5 shrink-0 text-risk-moderate" />
-      <p className="min-w-0">
+      <p className="min-w-0 truncate">
         <span className="font-semibold text-risk-moderate">Demonstration data.</span>{' '}
         <span className="text-muted-foreground">
           {data.counts.incidents > 0 && `${data.counts.incidents} incidents `}
           {data.counts.reports > 0 && `and ${data.counts.reports} reports `}
-          on this map are seeded samples — they did not happen and nobody filed them. Risk scores
-          here show how the engine works, not what these places are like.
+          on this map are seeded samples — risk scores here show how the engine works, not what
+          these places are like.
         </span>
       </p>
     </div>

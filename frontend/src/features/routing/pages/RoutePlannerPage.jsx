@@ -1,5 +1,15 @@
-import { useMemo, useState } from 'react';
-import { Flag, Layers, Loader2, MapPin, Navigation, Plus, ShieldCheck } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  Flag,
+  Layers,
+  Loader2,
+  MapPin,
+  Navigation,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Plus,
+  ShieldCheck,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +24,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { EmptyState } from '@/components/common/states';
 import { RiskScoreDial } from '@/components/common/RiskBadge';
-import { BoundsWatcher, ClickHandler, MapCanvas, MapController } from '@/features/map/MapCanvas';
+import {
+  BoundsWatcher,
+  ClickHandler,
+  MapCanvas,
+  MapController,
+  MapResizeHandler,
+} from '@/features/map/MapCanvas';
 import {
   AlertsLayer,
   IncidentsLayer,
@@ -32,6 +48,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useUiStore } from '@/stores/uiStore';
 import { useJourneyStore } from '@/stores/journeyStore';
 import { formatDistance, formatDuration } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import { LocationSearchInput } from '../components/LocationSearchInput';
 import { RiskExplanation } from '../components/RiskExplanation';
 import { RouteCard } from '../components/RouteCard';
@@ -56,6 +73,10 @@ export default function RoutePlannerPage() {
   const [reportCoords, setReportCoords] = useState(null);
   const [isReportOpen, setReportOpen] = useState(false);
   const [isJourneyOpen, setJourneyOpen] = useState(false);
+  const [isPanelOpen, setPanelOpen] = useState(true);
+  // What the next resolved device position should be applied to — geolocation
+  // is async, so a click only requests it; the effect below delivers it.
+  const [pendingLocationTarget, setPendingLocationTarget] = useState(null);
 
   const mapLayers = useUiStore((s) => s.mapLayers);
   const toggleMapLayer = useUiStore((s) => s.toggleMapLayer);
@@ -81,15 +102,28 @@ export default function RoutePlannerPage() {
     return selectedRoute.path;
   }, [selectedRoute]);
 
-  // Not a hook despite the shape — `use*` naming would confuse the linter.
-  const applyMyLocation = (setter) => {
+  // Geolocation resolves asynchronously — request it, then deliver the result
+  // to whichever target asked once the effect below sees `myCoords` update.
+  const requestMyLocation = (target) => {
+    setPendingLocationTarget(target);
     locate();
-    if (myCoords) {
-      setter({ label: 'My current location', lat: myCoords[0], lng: myCoords[1] });
-    } else {
-      toast.info('Getting your location…');
-    }
+    toast.info('Getting your location…');
   };
+
+  useEffect(() => {
+    if (!pendingLocationTarget || !myCoords) return;
+
+    if (pendingLocationTarget === 'origin') {
+      setOrigin({ label: 'My current location', lat: myCoords[0], lng: myCoords[1] });
+    } else if (pendingLocationTarget === 'destination') {
+      setDestination({ label: 'My current location', lat: myCoords[0], lng: myCoords[1] });
+    } else if (pendingLocationTarget === 'report') {
+      setReportCoords(myCoords);
+      setReportOpen(true);
+    }
+    setPendingLocationTarget(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myCoords, pendingLocationTarget]);
 
   const findRoutes = () => {
     if (!origin || !destination) return;
@@ -113,14 +147,32 @@ export default function RoutePlannerPage() {
   return (
     <div className="flex h-full flex-col lg:flex-row">
       {/* ---------------------------------------------------------- panel */}
-      <div className="flex w-full shrink-0 flex-col border-b lg:w-[420px] lg:border-b-0 lg:border-r">
-        <div className="space-y-3 p-4">
+      <div
+        className={cn(
+          'flex w-full shrink-0 flex-col border-b bg-muted/20 transition-[width] duration-200 lg:border-b-0 lg:border-r',
+          isPanelOpen ? 'lg:w-[380px]' : 'lg:w-0 lg:overflow-hidden lg:border-r-0',
+        )}
+      >
+        <div className="space-y-3 rounded-xl border bg-card p-3.5 shadow-sm m-3 mb-0">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-semibold">Plan your route</p>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7 -mr-1 text-muted-foreground hover:text-foreground"
+              onClick={() => setPanelOpen(false)}
+              aria-label="Hide search panel"
+            >
+              <PanelLeftClose className="size-4" />
+            </Button>
+          </div>
+
           <LocationSearchInput
             id="origin"
             placeholder="From where?"
             value={origin}
             onChange={setOrigin}
-            onUseMyLocation={() => applyMyLocation(setOrigin)}
+            onUseMyLocation={() => requestMyLocation('origin')}
             isLocating={isLocating}
             icon={MapPin}
           />
@@ -144,8 +196,6 @@ export default function RoutePlannerPage() {
           </Button>
         </div>
 
-        <Separator />
-
         <div className="min-h-0 flex-1 overflow-y-auto">
           {plan.isPending && (
             <div className="space-y-3 p-4">
@@ -156,11 +206,47 @@ export default function RoutePlannerPage() {
           )}
 
           {!plan.isPending && routes.length === 0 && (
-            <EmptyState
-              icon={ShieldCheck}
-              title="Plan a safer journey"
-              description="Enter where you're going and TrustRoute will compare the alternatives on contextual risk, not just travel time."
-            />
+            <div className="flex flex-col gap-4 p-4">
+              <EmptyState
+                icon={ShieldCheck}
+                title="Plan a safer journey"
+                description="Enter where you're going and TrustRoute will compare the alternatives on contextual risk, not just travel time."
+                className="py-8"
+              />
+
+              <div className="grid gap-2.5">
+                {[
+                  {
+                    icon: ShieldCheck,
+                    title: 'Safer, not just faster',
+                    body: 'Routes are ranked on contextual risk — the quickest road is not always the one you take.',
+                  },
+                  {
+                    icon: Layers,
+                    title: 'Explained, not asserted',
+                    body: 'Every score ships with the reasons behind it: incidents, reports, time of day.',
+                  },
+                  {
+                    icon: Navigation,
+                    title: 'Watched end to end',
+                    body: 'Journey Guardian notices deviations and overdue arrivals along the way.',
+                  },
+                ].map(({ icon: Icon, title, body }) => (
+                  <div
+                    key={title}
+                    className="flex items-start gap-3 rounded-xl border bg-card/50 p-3"
+                  >
+                    <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                      <Icon className="size-4" />
+                    </span>
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-medium leading-none">{title}</p>
+                      <p className="text-xs leading-relaxed text-muted-foreground">{body}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
           {!plan.isPending && routes.length > 0 && (
@@ -221,6 +307,7 @@ export default function RoutePlannerPage() {
       <div className="relative min-h-[50vh] flex-1">
         <MapCanvas>
           <MapController bounds={mapBounds} />
+          <MapResizeHandler />
           <BoundsWatcher onChange={setBbox} />
           <ClickHandler
             onClick={(coords) => {
@@ -269,10 +356,23 @@ export default function RoutePlannerPage() {
 
         {/* Floating map controls */}
         <div className="pointer-events-none absolute inset-x-3 top-3 z-[400] flex items-start justify-between gap-2">
-          <Badge variant="secondary" className="pointer-events-auto gap-1.5 shadow-sm">
-            <MapPin className="size-3" />
-            Tap the map to report an issue
-          </Badge>
+          <div className="pointer-events-auto flex items-center gap-2">
+            {!isPanelOpen && (
+              <Button
+                variant="secondary"
+                size="icon"
+                className="shadow-sm"
+                onClick={() => setPanelOpen(true)}
+                aria-label="Show search panel"
+              >
+                <PanelLeftOpen className="size-4" />
+              </Button>
+            )}
+            <Badge variant="secondary" className="gap-1.5 shadow-sm">
+              <MapPin className="size-3" />
+              Tap the map to report an issue
+            </Badge>
+          </div>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -305,8 +405,12 @@ export default function RoutePlannerPage() {
           variant="secondary"
           className="absolute bottom-6 left-3 z-[400] shadow-md"
           onClick={() => {
-            setReportCoords(myCoords);
-            setReportOpen(true);
+            if (myCoords) {
+              setReportCoords(myCoords);
+              setReportOpen(true);
+            } else {
+              requestMyLocation('report');
+            }
           }}
           aria-label="Report an issue at my location"
         >

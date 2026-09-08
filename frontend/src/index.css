@@ -1,0 +1,167 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 99%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 221 83% 53%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 210 40% 94%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 221 83% 53%;
+
+    /* Risk bands. Not the raw red/amber/green — these are tuned to stay
+       distinguishable for the most common colour-vision deficiencies, and
+       are always paired with a text label, never used as the only signal. */
+    --risk-low: 152 60% 36%;
+    --risk-moderate: 38 92% 45%;
+    --risk-high: 22 90% 52%;
+    --risk-critical: 0 74% 51%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 222 47% 7%;
+    --foreground: 210 40% 96%;
+
+    --card: 222 44% 10%;
+    --card-foreground: 210 40% 96%;
+
+    --popover: 222 44% 10%;
+    --popover-foreground: 210 40% 96%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 11%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 96%;
+
+    --muted: 217 33% 15%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 33% 19%;
+    --accent-foreground: 210 40% 96%;
+
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 20%;
+    --input: 217 33% 20%;
+    --ring: 217 91% 60%;
+
+    --risk-low: 152 55% 48%;
+    --risk-moderate: 38 92% 55%;
+    --risk-high: 22 92% 58%;
+    --risk-critical: 0 84% 62%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+
+  /* Keyboard focus stays visible everywhere; pointer focus does not. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  ::-webkit-scrollbar {
+    @apply h-2 w-2;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-border;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+}
+
+@layer components {
+  /* Frosted panel used for every floating control over the map. */
+  .glass-panel {
+    @apply rounded-xl border border-border/60 bg-card/85 shadow-lg backdrop-blur-md;
+  }
+}
+
+/* ---------------------------------------------------------------- Leaflet
+   Leaflet ships its own light-themed chrome. These rules re-skin it with the
+   app's design tokens so the map does not look bolted on in dark mode. */
+
+.leaflet-container {
+  @apply bg-muted font-sans;
+  z-index: 0;
+}
+
+.leaflet-control-zoom a,
+.leaflet-control-attribution {
+  @apply border-border bg-card text-foreground;
+}
+
+.leaflet-control-zoom a:hover {
+  @apply bg-accent;
+}
+
+.leaflet-control-attribution a {
+  @apply text-muted-foreground;
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  @apply border border-border bg-card text-card-foreground shadow-lg;
+}
+
+.leaflet-popup-content-wrapper {
+  @apply rounded-lg;
+}
+
+.leaflet-popup-content {
+  @apply m-0 p-3 text-sm;
+}
+
+.leaflet-popup-close-button {
+  @apply text-muted-foreground;
+}
+
+/* Dark mode needs the tiles knocked back, or the map overpowers the UI. */
+.dark .leaflet-tile-pane {
+  filter: brightness(0.68) contrast(1.05) saturate(0.75) hue-rotate(180deg) invert(1);
+}
+
+/* The pulsing "you are here" marker. */
+.live-marker {
+  @apply relative;
+}
+.live-marker::after {
+  content: '';
+  @apply absolute inset-0 rounded-full;
+  background: hsl(var(--primary) / 0.35);
+  animation: pulse-ring 1.6s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+}

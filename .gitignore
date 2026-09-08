@@ -16,3 +16,6 @@ backend/uploads/
 .DS_Store
 Thumbs.db
 *.log
+
+# Personal push-workflow notes — not part of the project
+PUSH_INSTRUCTIONS.md

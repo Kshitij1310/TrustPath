@@ -7,7 +7,6 @@ import { SosButton } from '@/features/emergency/components/SosButton';
 import { useMe } from '@/features/auth/queries';
 import { DemoDataBanner } from './DemoDataBanner';
 import { MobileNav } from './MobileNav';
-import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 
 export function AppShell() {
@@ -16,18 +15,16 @@ export function AppShell() {
   useMe();
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-background">
-      <Sidebar />
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-background">
+      <Topbar />
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <Topbar />
+      {/* Sits directly under the header, above everything else — a demo-data
+          notice buried below the fold would not be doing its job. */}
+      <DemoDataBanner />
 
-        {/* Sits directly under the topbar, above everything else — a demo-data
-            notice buried below the fold would not be doing its job. */}
-        <DemoDataBanner />
-
-        {/* Journey state is app-wide: the tracker runs and the status bar shows
-            no matter which page is open. */}
+      <div className="flex min-h-0 flex-1 flex-col">
+        {/* Journey state is app-wide: the tracker runs and the status bar
+            shows no matter which page is open. */}
         <JourneyTracker />
         <ActiveJourneyBar />
 
